@@ -30,6 +30,17 @@
 
     <div class="admin-panel">
         <h2 style="margin-top: 0;">➕ Utwórz Nowy Quiz</h2>
+        {{-- Błędy walidacji --}}
+        @if ($errors->any() && session('form_error') === 'store_quiz')
+            <div style="background: #f8d7da; color: #721c24; padding: 10px; margin-bottom: 10px; border-radius: 4px;">
+                <strong>Wystąpiły błędy:</strong>
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
         <form action="{{ route('admin.quizzes.store') }}" method="POST">
             @csrf
             <input type="text" name="title" placeholder="Nazwa Quizu (np. PHP Expert)" required style="padding: 8px; width: 40%;">

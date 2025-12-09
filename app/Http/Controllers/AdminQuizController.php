@@ -1,48 +1,36 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Quiz;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreQuizRequest;
+use App\Http\Requests\UpdateQuizRequest;
 
 class AdminQuizController extends Controller
 {
-    // 1. Zapisywanie nowego quizu
-    public function store(Request $request)
+    public function store(StoreQuizRequest $request)
     {
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-
-        Quiz::create($data);
-
-        return redirect()->route('quizzes.index')->with('success', 'Utworzono nowy quiz!');
+        Quiz::create($request->validated());
+        return redirect()->route('quizzes.index')->with('success', 'Quiz został pomyślnie utworzony.');
     }
 
-    // 2. Usuwanie quizu
-    public function destroy(Quiz $quiz)
-    {
-        $quiz->delete();
-        return redirect()->route('quizzes.index')->with('success', 'Quiz został usunięty.');
-    }
-
-    // 3. Formularz edycji
     public function edit(Quiz $quiz)
     {
+        // Załaduj pytania, aby uniknąć problemu N+1
+        $quiz->load('questions');
         return view('admin.quizzes.edit', compact('quiz'));
     }
 
-    // 4. Aktualizacja quizu
-    public function update(Request $request, Quiz $quiz)
+    public function update(UpdateQuizRequest $request, Quiz $quiz)
     {
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
+        $quiz->update($request->validated());
+        return redirect()->route('quizzes.index')->with('success', 'Quiz został pomyślnie zaktualizowany.');
+    }
 
-        $quiz->update($data);
-
-        return redirect()->route('quizzes.index')->with('success', 'Quiz zaktualizowany!');
+    public function destroy(Quiz $quiz)
+    {
+        $quiz->delete(); // Dzięki onDelete('cascade') pytania usuną się automatycznie
+        return redirect()->route('quizzes.index')->with('success', 'Quiz i wszystkie jego pytania zostały usunięte.');
     }
 }

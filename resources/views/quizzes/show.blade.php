@@ -1,9 +1,4 @@
 @php
-    // Ułatwienie dostępu do URL
-    $baseRoute = route('quizzes.question', ['quiz' => $quiz->id, 'questionNumber' => 1]);
-
-    // Opcjonalne odpowiedzi (zakładamy statyczne A, B, C, D na potrzeby demonstracji)
-    $options = ['A', 'B', 'C', 'D'];
 
     
 @endphp
@@ -22,16 +17,16 @@
 
             <h3>{{ $currentQuestion->text }}</h3>
 
-            @foreach($options as $option)
+            @foreach($currentQuestion->options as $key => $text)
                 <div style="margin-bottom: 10px;">
                     <label>
                         <input
                             type="radio"
                             name="answer"
-                            value="{{ $option }}"
-                            {{ $userAnswer === $option ? 'checked' : '' }}
+                            value="{{ $key }}"
+                            {{ $userAnswer === $key ? 'checked' : '' }}
                         >
-                        Odpowiedź {{ $option }} (Tutaj byłby tekst odpowiedzi)
+                        {{ $key }}. {{ $text }}
                     </label>
                 </div>
             @endforeach

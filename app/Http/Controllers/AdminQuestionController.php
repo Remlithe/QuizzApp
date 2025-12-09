@@ -1,45 +1,40 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\Quiz;
 use App\Models\Question;
-use Illuminate\Http\Request;
+use App\Http\Requests\StoreQuestionRequest;
+use App\Http\Requests\UpdateQuestionRequest;
 
 class AdminQuestionController extends Controller
 {
-    // 1. Wyświetl formularz
     public function create(Quiz $quiz)
     {
         return view('admin.questions.create', compact('quiz'));
     }
 
-    // 2. Zapisz pytanie do bazy
-    public function store(Request $request, Quiz $quiz)
+    public function store(StoreQuestionRequest $request, Quiz $quiz)
     {
-        // Walidacja danych
-        $data = $request->validate([
-            'text' => 'required|string',
-            'option_a' => 'required|string',
-            'option_b' => 'required|string',
-            'option_c' => 'required|string',
-            'option_d' => 'required|string',
-            'correct_answer' => 'required|in:A,B,C,D', // Musi być jedną z liter
-        ]);
+        $quiz->questions()->create($request->validated());
+        return redirect()->route('admin.quizzes.edit', $quiz)->with('success', 'Pytanie zostało dodane.');
+    }
 
-        // Tworzenie pytania w bazie
-        Question::create([
-            'quiz_id' => $quiz->id,
-            'text' => $data['text'],
-            'options' => [ // Pakujemy odpowiedzi do tablicy (JSON)
-                'A' => $data['option_a'],
-                'B' => $data['option_b'],
-                'C' => $data['option_c'],
-                'D' => $data['option_d'],
-            ],
-            'correct_answer' => $data['correct_answer'] // Tu zapisujemy np. "C"
-        ]);
+    public function edit(Quiz $quiz, Question $question)
+    {
+        return view('admin.questions.edit', compact('quiz', 'question'));
+    }
 
-        return redirect()->route('quizzes.index')->with('success', 'Dodano nowe pytanie!');
+    public function update(UpdateQuestionRequest $request, Quiz $quiz, Question $question)
+    {
+        $question->update($request->validated());
+        return redirect()->route('admin.quizzes.edit', $quiz)->with('success', 'Pytanie zostało zaktualizowane.');
+    }
+
+    public function destroy(Quiz $quiz, Question $question)
+    {
+        $question->delete();
+        return redirect()->route('admin.quizzes.edit', $quiz)->with('success', 'Pytanie zostało usunięte.');
     }
 }
