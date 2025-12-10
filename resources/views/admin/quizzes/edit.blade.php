@@ -1,19 +1,42 @@
-<h1>Edytuj Quiz: {{ $quiz->title }}</h1>
+{{-- resources/views/admin/quizzes/edit.blade.php --}}
+@extends('layouts.admin')
 
-<form action="{{ route('admin.quizzes.update', $quiz->id) }}" method="POST">
-    @csrf
-    @method('PUT') {{-- Ważne dla aktualizacji --}}
-
-    <div style="margin-bottom: 10px;">
-        <label>Tytuł:</label><br>
-        <input type="text" name="title" value="{{ $quiz->title }}" required style="width: 300px;">
+@section('content')
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>✏️ Edytuj Quiz: <span class="text-primary">{{ $quiz->title }}</span></h2>
     </div>
 
-    <div style="margin-bottom: 10px;">
-        <label>Opis:</label><br>
-        <textarea name="description" style="width: 300px;">{{ $quiz->description }}</textarea>
-    </div>
+    {{-- Formularz edycji danych quizu --}}
+    <form action="{{ route('admin.quizzes.update', $quiz->id) }}" method="POST" class="mb-5">
+        @csrf
+        @method('PUT') {{-- Metoda PUT jest wymagana do aktualizacji --}}
+        
+        @include('admin.quizzes._form', ['quiz' => $quiz])
+    </form>
 
-    <button type="submit" style="background: orange; border: none; padding: 10px;">Zapisz Zmiany</button>
-    <a href="{{ route('quizzes.index') }}">Anuluj</a>
-</form>
+    <hr>
+
+    {{-- Sekcja Pytań --}}
+    <div class="mt-5">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h3>❓ Pytania w tym quizie ({{ $quiz->questions->count() }})</h3>
+            <a href="{{ route('admin.questions.create', $quiz->id) }}" class="btn btn-primary">
+                ➕ Dodaj Pytanie
+            </a>
+        </div>
+
+        @if($quiz->questions->isEmpty())
+            <div class="alert alert-warning">Ten quiz nie ma jeszcze żadnych pytań.</div>
+        @else
+            <ul class="list-group">
+                @foreach($quiz->questions as $question)
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>{{ $question->text }}</span>
+                        <div class="badge bg-secondary">Poprawna: {{ $question->correct_answer }}</div>
+                        {{-- Opcjonalnie: Tu można dodać guziki edycji/usuwania pytania --}}
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </div>
+@endsection

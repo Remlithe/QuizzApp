@@ -2,47 +2,61 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Quiz;
 use Illuminate\Http\Request;
+use App\Http\Requests\QuizStoreRequest; // ⬅️ Dodany import
+use App\Http\Requests\QuizUpdateRequest; // ⬅️ Dodany import
 
 class AdminQuizController extends Controller
 {
-    // 1. Zapisywanie nowego quizu
-    public function store(Request $request)
+    // READ: Wyświetla listę wszystkich quizów w panelu admina
+    public function index()
     {
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-
-        Quiz::create($data);
-
-        return redirect()->route('quizzes.index')->with('success', 'Utworzono nowy quiz!');
+        $quizzes = Quiz::with('questions')->latest()->paginate(10);
+        return view('admin.quizzes.index', compact('quizzes'));
     }
 
-    // 2. Usuwanie quizu
-    public function destroy(Quiz $quiz)
+    // CREATE: Wyświetla formularz do tworzenia nowego quizu
+    public function create()
     {
-        $quiz->delete();
-        return redirect()->route('quizzes.index')->with('success', 'Quiz został usunięty.');
+        return view('admin.quizzes.create');
     }
 
-    // 3. Formularz edycji
+    // CREATE (STORE): Zapisuje nowy quiz w bazie danych
+    public function store(QuizStoreRequest $request)
+    {
+        // Walidacja wykonana automatycznie przez QuizStoreRequest
+        Quiz::create($request->validated());
+        
+        return redirect()->route('admin.quizzes.index')
+                         ->with('success', 'Quiz został pomyślnie dodany!');
+    }
+
+    // EDIT: Wyświetla formularz edycji istniejącego quizu
     public function edit(Quiz $quiz)
     {
         return view('admin.quizzes.edit', compact('quiz'));
     }
 
-    // 4. Aktualizacja quizu
-    public function update(Request $request, Quiz $quiz)
+    // UPDATE: Aktualizuje istniejący quiz w bazie danych
+    public function update(QuizUpdateRequest $request, Quiz $quiz)
     {
-        $data = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
+        // Walidacja wykonana automatycznie przez QuizUpdateRequest
+        $quiz->update($request->validated());
+        
+        return redirect()->route('admin.quizzes.index')
+                         ->with('success', 'Quiz został pomyślnie zaktualizowany.');
+    }
 
-        $quiz->update($data);
-
-        return redirect()->route('quizzes.index')->with('success', 'Quiz zaktualizowany!');
+    // DELETE: Usuwa quiz z bazy danych
+    public function destroy(Quiz $quiz)
+    {
+        // WAŻNE: Musisz zadbać o usunięcie powiązanych pytań (cascade delete w migracji)
+        // Jeśli nie masz cascade delete, użyj: $quiz->questions()->delete();
+        $quiz->delete();
+        
+        return redirect()->route('admin.quizzes.index')
+                         ->with('success', 'Quiz został pomyślnie usunięty.');
     }
 }

@@ -22,17 +22,18 @@
 
             <h3>{{ $currentQuestion->text }}</h3>
 
-            @foreach($options as $option)
+            @foreach($currentQuestion->options as $key => $optionText)
                 <div style="margin-bottom: 10px;">
-                    <label>
-                        <input
-                            type="radio"
-                            name="answer"
-                            value="{{ $option }}"
-                            {{ $userAnswer === $option ? 'checked' : '' }}
-                        >
-                        Odpowiedź {{ $option }} (Tutaj byłby tekst odpowiedzi)
-                    </label>
+                    <label class="list-group-item list-group-item-action">
+                            <input 
+                                class="form-check-input me-1" 
+                                type="radio" 
+                                name="answer" 
+                                value="{{ $key }}"
+                                {{ ($userAnswer === $key) ? 'checked' : '' }}
+                            >
+                            <strong>{{ $key }}.</strong> {{ $optionText }}
+                        </label>
                 </div>
             @endforeach
 

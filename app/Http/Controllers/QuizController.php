@@ -2,108 +2,96 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Quiz;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Http\Request;
 
 class QuizController extends Controller
 {
+    /**
+     * Display a listing of the quizzes.
+     */
     public function index()
     {
-        $quizzes = Quiz::all();
+        // Fetch all quizzes from the database, ordered by the newest first.
+        $quizzes = Quiz::latest()->get();
 
-        return view('quizzes.index', compact('quizzes'));
+        // Pass the quizzes to the view.
+        return view('quizzes.index', ['quizzes' => $quizzes]);
     }
 
     public function showQuestion(Quiz $quiz, $questionNumber = 1)
     {
-        // 1. Pobierz wszystkie pytania
-        $questions = $quiz->questions()->get();
+        // Eager load questions to avoid N+1 problem
+        $quiz->load('questions');
+        $questions = $quiz->questions;
+        $totalQuestions = $questions->count();
 
-        if ($questions->isEmpty()) {
-        return redirect()->route('quizzes.index')
-            ->with('error', 'Ten quiz nie ma jeszcze dodanych pytań.');
-    }
-        // Sprawdzenie, czy numer pytania jest prawidłowy
-        if ($questionNumber < 1 || $questionNumber > $questions->count()) {
-        return redirect()->route('quizzes.question', ['quiz' => $quiz->id, 'questionNumber' => 1]);
-    }
+        if ($questionNumber < 1 || $questionNumber > $totalQuestions) {
+            abort(404, 'Nie ma pytania o takim numerze.');
+        }
 
-        // 2. Pobierz aktualne pytanie (kolekcja jest 0-indeksowana, stąd -1)
+        // Get the current question based on the number
         $currentQuestion = $questions->get($questionNumber - 1);
 
-        // 3. Pobierz postęp z sesji (odpowiedzi użytkownika)
-        $progress = Session::get('quiz_progress_' . $quiz->id, []);
+        // Get user's progress from the session
+        $progress = session()->get('quiz_progress.' . $quiz->id, []);
+
+        // Get the answer for the current question, if it exists
         $userAnswer = $progress[$currentQuestion->id] ?? null;
 
         return view('quizzes.show', [
             'quiz' => $quiz,
-            'questions' => $questions,       // Lista pytań do panelu bocznego
-            'currentQuestion' => $currentQuestion, // Bieżące pytanie
-            'questionNumber' => (int)$questionNumber, // Numer pytania (1, 2, 3...)
-            'totalQuestions' => $questions->count(),
-            'userAnswer' => $userAnswer,     // Ostatnia odpowiedź użytkownika
-            'progress' => $progress          // Wszystkie odpowiedzi
+            'questions' => $questions,
+            'currentQuestion' => $currentQuestion,
+            'questionNumber' => $questionNumber,
+            'totalQuestions' => $totalQuestions,
+            'progress' => $progress,
+            'userAnswer' => $userAnswer,
         ]);
     }
+
     public function storeAnswer(Request $request, Quiz $quiz, $questionNumber)
     {
-        // ... (Kroki 1-5, zapisywanie odpowiedzi w sesji, pozostają bez zmian)
-        $request->validate(['answer' => 'required']);
+        $request->validate([
+            'answer' => 'required',
+            'question_id' => 'required|exists:questions,id',
+        ]);
 
-    // 🛑 ZMIANA: Rzutowanie na (int)
-    $questionId = (int) $request->input('question_id'); 
-    $answer = $request->input('answer');
+        $progress = session()->get('quiz_progress.' . $quiz->id, []);
+        $progress[$request->question_id] = $request->answer;
+        session()->put('quiz_progress.' . $quiz->id, $progress);
 
-    $sessionKey = 'quiz_progress_' . $quiz->id;
-    $progress = Session::get($sessionKey, []);
+        $totalQuestions = $quiz->questions()->count();
 
-    // Zapisujemy pod kluczem będącym liczbą
-    $progress[$questionId] = $answer; 
-
-    Session::put($sessionKey, $progress);
-
-    // ... reszta kodu (przekierowania) bez zmian ...
-    
-    // Skopiuj resztę logiki przekierowania z poprzednich kroków
-    $nextQuestionNumber = (int)$questionNumber + 1;
-    if ($nextQuestionNumber <= $quiz->questions()->count()) {
-        return redirect()->route('quizzes.question', ['quiz' => $quiz->id, 'questionNumber' => $nextQuestionNumber]);
+        if ($questionNumber >= $totalQuestions) {
+            // If it's the last question, go to results
+            return redirect()->route('quizzes.results', $quiz->id);
+        } else {
+            // Go to the next question
+            return redirect()->route('quizzes.question', ['quiz' => $quiz->id, 'questionNumber' => $questionNumber + 1]);
+        }
     }
-    return redirect()->route('quizzes.results', ['quiz' => $quiz->id]);
-    }
+
     public function showResults(Quiz $quiz)
     {
-
-        // 1. Pobierz wszystkie poprawne odpowiedzi z bazy (tylko kolumny 'id' i 'correct_answer')
-        $questions = $quiz->questions()->pluck('correct_answer', 'id');
+        $progress = session()->get('quiz_progress.' . $quiz->id, []);
+        $questions = $quiz->questions->keyBy('id');
         
-        // 2. Pobierz odpowiedzi użytkownika z sesji
-        $sessionKey = 'quiz_progress_' . $quiz->id;
-        $userAnswers = Session::get($sessionKey, []);
-
         $correctCount = 0;
-        $totalAnswered = count($userAnswers);
-
-        // 3. Logika oceniania
-        foreach ($userAnswers as $questionId => $userAnswer) {
-        // Rzutowanie na int dla pewności
-        $correctAnswer = $questions->get((int)$questionId); 
-        
-        if ($correctAnswer && $userAnswer === $correctAnswer) {
-            $correctCount++;
+        foreach ($progress as $questionId => $userAnswer) {
+            if (isset($questions[$questionId]) && $questions[$questionId]->correct_answer === $userAnswer) {
+                $correctCount++;
+            }
         }
-        }
-        // 4. Usuń postęp z sesji po zakończeniu quizu (opcjonalnie, ale zalecane)
-        Session::forget($sessionKey);
 
-        // 5. Wyświetl widok wyników
+        // Clear progress after showing results
+        session()->forget('quiz_progress.' . $quiz->id);
+
         return view('quizzes.results', [
             'quiz' => $quiz,
             'correctCount' => $correctCount,
-            'totalAnswered' => $totalAnswered,
-            'totalQuestions' => $quiz->questions()->count() // Wszystkie pytania
+            'totalAnswered' => count($progress),
+            'totalQuestions' => $questions->count(),
         ]);
-        
     }
 }
