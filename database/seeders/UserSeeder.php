@@ -20,7 +20,6 @@ class UserSeeder extends Seeder
             [
                 'name' => 'Admin',
                 'password' => Hash::make('password'), // Pamiętaj, aby zmienić to hasło w środowisku produkcyjnym!
-                'is_admin' => true,
                 'email_verified_at' => now(), // Opcjonalnie: od razu oznacz email jako zweryfikowany
             ]
         );
