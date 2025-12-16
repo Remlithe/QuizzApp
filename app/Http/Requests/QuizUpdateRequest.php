@@ -11,7 +11,7 @@ class QuizUpdateRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,9 @@ class QuizUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean', // Checkbox wysyła 1 lub 0
         ];
     }
 }

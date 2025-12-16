@@ -21,17 +21,8 @@
         @enderror
     </div>
 
-    <div class="form-check mb-4">
-        <input type="hidden" name="is_active" value="0">
-        <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="1" 
-               @checked(old('is_active', $quiz->is_active ?? false))>
-        <label class="form-check-label" for="is_active">
-            Aktywny (Widoczny dla użytkowników)
-        </label>
-    </div>
-
     <div class="d-flex justify-content-between">
-        <a href="{{ route('quizzes.index') }}" class="btn btn-secondary">Anuluj</a>
+        <a href="{{ route('admin.quizzes.index') }}" class="btn btn-secondary">Anuluj</a>
         <button type="submit" class="btn btn-success">
             {{ isset($quiz) && $quiz->exists ? 'Zapisz Zmiany' : 'Utwórz Quiz' }}
         </button>

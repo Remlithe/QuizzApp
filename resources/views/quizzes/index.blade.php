@@ -45,7 +45,7 @@
     @endif
 
     {{-- The "Create New Quiz" panel will only be visible to logged-in admins --}}
-    @if (auth()->check() && auth()->user()->is_admin)
+    @if (auth()->check())
         <div class="admin-panel">
             <h2 style="margin-top: 0;">➕ Utwórz Nowy Quiz</h2>
             <form action="{{ route('admin.quizzes.store') }}" method="POST">
@@ -74,7 +74,7 @@
             </div>
 
             {{-- The CRUD buttons will only be visible to logged-in admins --}}
-            @if (auth()->check() && auth()->user()->is_admin)
+            @if (auth()->check())
                 <hr style="margin: 10px 0; border: 0; border-top: 1px solid #ddd;">
                 <div style="display: flex; align-items: center; gap: 5px;">
                     <strong>Opcje Nauczyciela:</strong>
@@ -95,7 +95,7 @@
 
     @if($quizzes->isEmpty())
         {{-- Show a different message depending on if the user is an admin or not --}}
-        @if (auth()->check() && auth()->user()->is_admin)
+        @if (auth()->check())
             <p>Brak quizów. Utwórz pierwszy powyżej!</p>
         @else
             <p>Brak dostępnych quizów w tym momencie.</p>
